@@ -5,6 +5,7 @@ from app.core.broadcast import broadcast
 
 router = APIRouter()
 
+# websocket endpoint for the esp32 to send CBOR data
 @router.websocket("")
 async def esp32_endpoint(websocket: WebSocket):
     await websocket.accept()
