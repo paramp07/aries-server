@@ -8,6 +8,14 @@ app = FastAPI()
 app.include_router(esp32.router, prefix="/ws", tags=["websocket-esp32"])
 app.include_router(client.router, prefix="/ws/client", tags=["websocket-client"])
 
+@app.get("/")
+def read_root():
+    return {"message": "Aries Server is running"}
+
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 if __name__ == "__main__":
     import uvicorn
     # run_server.py logic bundled in main here for convenience

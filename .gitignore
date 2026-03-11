@@ -1,0 +1,22 @@
+node_modules
+# Keep environment variables out of version control
+.env
+
+# Python caches and artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Prisma generated
+prisma/schema.prisma.db
+
+# OS generated files
+.DS_Store
+Thumbs.db

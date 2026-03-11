@@ -1,0 +1,18 @@
+# Start the full server and database (adds -d to run in background)
+docker compose up -d
+
+# Stop the server and database
+docker compose down
+
+# Rebuild the server (use this if you modify any Python library dependencies or Dockerfile)
+docker compose up --build
+
+# View logs for the Python server (press Ctrl+C to exit)
+docker compose logs -f app
+
+# Run a Prism Migration (use this if you modify prisma/schema.prisma)
+docker compose exec app prisma migrate dev --name <describe-your-changes>
+
+# Open Prisma Studio (Database UI viewer)
+docker compose exec app prisma studio
+# -> Then go to http://localhost:5555 in your browser
