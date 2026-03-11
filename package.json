@@ -1,0 +1,9 @@
+{
+  "name": "aries-server",
+  "version": "1.0.0",
+  "description": "Aries Server",
+  "private": true,
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  }
+}
