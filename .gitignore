@@ -13,6 +13,7 @@ venv/
 .venv/
 pip-log.txt
 pip-delete-this-directory.txt
+tests/
 
 # Prisma generated
 prisma/schema.prisma.db

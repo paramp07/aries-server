@@ -1,12 +1,13 @@
 # entrypoint, mounts all routers
 from fastapi import FastAPI
-from app.api.ws import esp32, client
+from app.api.ws import esp32, client, audio
 
 app = FastAPI()
 
 # Mount routers
 app.include_router(esp32.router, prefix="/ws", tags=["websocket-esp32"])
 app.include_router(client.router, prefix="/ws/client", tags=["websocket-client"])
+app.include_router(audio.router, prefix="/ws/audio", tags=["audio-ai"]) # Bridge is at /ws/audio/data, WS is at /ws/audio
 
 @app.get("/")
 def read_root():
@@ -15,6 +16,7 @@ def read_root():
 @app.get("/health")
 def health_check():
     return {"status": "ok"}
+
 
 if __name__ == "__main__":
     import uvicorn

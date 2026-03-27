@@ -36,5 +36,23 @@ services:
       - .:/app
     command: python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
+  audio-streamer:
+    build: .
+    container_name: aries-audio-streamer
+    restart: always
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - SERIAL_PORT=${SERIAL_PORT:-/dev/ttyACM0}
+      - NEXTJS_WEBHOOK_URL=${NEXTJS_WEBHOOK_URL:-http://host.docker.internal:3000/api/audio/webhook}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    # On Linux, this maps the serial port. On Windows, additional steps are needed.
+    devices:
+      - "${SERIAL_PORT:-/dev/ttyACM0}:${SERIAL_PORT:-/dev/ttyACM0}"
+    command: python -m app.services.inference_streamer
+
 volumes:
   postgres_data:
