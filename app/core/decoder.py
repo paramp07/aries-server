@@ -14,5 +14,8 @@ def decode_sensor_cbor(data: bytes, round_values: bool = True, decimals: int = 2
         "hs3003": {
             "temperature": r(decoded["hs3003"]["temperature"]),
             "humidity": r(decoded["hs3003"]["humidity"]),
+        },
+        "mq2": {
+            "rawValue": decoded["mq2"]["rawValue"]
         }
     }
