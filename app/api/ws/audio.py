@@ -2,6 +2,8 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from pydantic import BaseModel
 from typing import List
 import json
+import asyncio
+import time
 
 router = APIRouter()
 
@@ -9,7 +11,7 @@ router = APIRouter()
 audio_clients: List[WebSocket] = []
 
 class AudioData(BaseModel):
-    type: str # Always "audio_inference"
+    type: str  # Always "audio_inference"
     top_sound: str
     human_vocal_percent: float
     value: float
@@ -30,15 +32,38 @@ async def broadcast_audio(data: dict):
             audio_clients.remove(client)
     
     if len(audio_clients) > 0:
-        print(f"📡 Audio AI Broadcast to {len(audio_clients)} clients: {data.get('top_sound')}")
+        print(f"📡 Audio AI Broadcast: {data.get('top_sound')} -> {len(audio_clients)} clients")
 
-# Internal helper for easy reference
-app_post_bridge_dummy = None 
+async def audio_heartbeat():
+    """Background loop to send a pulse to keep front-end hooks alive and responsive."""
+    while True:
+        if audio_clients:
+            heartbeat_data = {
+                "type": "heartbeat",
+                "timestamp": time.time()
+            }
+            # Broadcast to all clients
+            disconnected = []
+            for client in audio_clients:
+                try:
+                    await client.send_json(heartbeat_data)
+                except Exception:
+                    disconnected.append(client)
+            for client in disconnected:
+                if client in audio_clients:
+                    audio_clients.remove(client)
+        
+        await asyncio.sleep(5)  # Every 5 seconds
+
+# Start heartbeat on module load
+@router.on_event("startup")
+async def startup_event():
+    asyncio.create_task(audio_heartbeat())
+
 
 @router.post("/data")
 async def receive_audio_ingestion(data: AudioData):
-    """Bridge endpoint for the AI process to send results."""
-    # print(f"📥 Bridge received audio data: {data.top_sound}")
+    """Bridge endpoint for the AI process to send results if external."""
     await broadcast_audio(data.model_dump())
     return {"status": "relayed"}
 
@@ -51,7 +76,7 @@ async def audio_websocket_endpoint(websocket: WebSocket):
     
     try:
         while True:
-            await websocket.receive_text() # keep alive
+            await websocket.receive_text()  # keep alive
     except WebSocketDisconnect:
         if websocket in audio_clients:
             audio_clients.remove(websocket)

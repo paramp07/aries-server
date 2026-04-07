@@ -1,13 +1,16 @@
 # entrypoint, mounts all routers
 from fastapi import FastAPI
-from app.api.ws import esp32, client, audio
+from app.api.ws import esp32, client, audio, audio_stream
+from app.api import video_feed
 
 app = FastAPI()
 
 # Mount routers
 app.include_router(esp32.router, prefix="/ws", tags=["websocket-esp32"])
 app.include_router(client.router, prefix="/ws/client", tags=["websocket-client"])
-app.include_router(audio.router, prefix="/ws/audio", tags=["audio-ai"]) # Bridge is at /ws/audio/data, WS is at /ws/audio
+app.include_router(audio.router, prefix="/ws/audio", tags=["audio-ai"]) 
+app.include_router(audio_stream.router, prefix="/ws/audio_feed", tags=["audio-stream"])
+app.include_router(video_feed.router, prefix="/video_feed", tags=["video-stream"])
 
 @app.get("/")
 def read_root():

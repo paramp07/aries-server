@@ -4,6 +4,7 @@ from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from app.core.decoder import decode_sensor_cbor
 from app.core.broadcast import broadcast
 from app.ml.vision.thermal import processor as thermal_processor
+from app.services.media_service import media_service
 
 router = APIRouter()
 
@@ -16,26 +17,34 @@ async def esp32_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_bytes()
+            if not data:
+                continue
+
+            # Header is 1 byte
+            packet_type = data[0]
+            payload = data[1:]
+
             try:
-                # 1. Decode CBOR
-                decoded = decode_sensor_cbor(data, decimals=4)
-                
-                # 2. Process Thermal Frame if present
-                if 'mlx90640' in decoded:
-                    metrics = thermal_processor.process_frame(decoded['mlx90640'])
-                    decoded['thermalAnalytics'] = metrics
+                if packet_type == 0x01: # CBOR (Sensors/Thermal)
+                    # 1. Decode CBOR
+                    decoded = decode_sensor_cbor(payload, decimals=4)
                     
-                    # Diagnostic print to check range
-                    grid = np.array(decoded['mlx90640'])
-                    valid = grid[grid > 0]
-                    if valid.size > 0:
-                        print(f"THERMAL STATS: Min={valid.min():.1f} Max={valid.max():.1f} Avg={valid.mean():.1f} (Size: {grid.shape})")
+                    # 2. Process Thermal Frame if present
+                    if 'mlx90640' in decoded:
+                        metrics = thermal_processor.process_frame(decoded['mlx90640'])
+                        decoded['thermalAnalytics'] = metrics
+                    
+                    # 3. Broadcast to all clients
+                    await broadcast(decoded)
                 
-                # 3. Broadcast to all clients
-                await broadcast(decoded)
+                elif packet_type == 0x02: # MJPEG (Camera)
+                    media_service.update_video_frame(payload)
                 
+                elif packet_type == 0x03: # PCM (Audio)
+                    await media_service.add_audio_chunk(payload)
+                    
             except Exception as e:
-                print(f"Decode error: {e}")
+                print(f"Media routing error: {e}")
 
     except WebSocketDisconnect:
         print("ESP32 disconnected")
