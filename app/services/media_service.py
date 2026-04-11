@@ -19,6 +19,7 @@ class MediaService:
         
         # Latest video frame for MJPEG streaming
         self.latest_frame = None
+        self.frame_event = asyncio.Event()
         
         # Binary audio clients (Next.js)
         self.audio_clients: List[WebSocket] = []
@@ -26,6 +27,8 @@ class MediaService:
     def update_video_frame(self, frame_bytes: bytes):
         """Update the latest JPEG frame received from ESP32."""
         self.latest_frame = frame_bytes
+        self.frame_event.set()
+        self.frame_event.clear()
 
     async def add_audio_chunk(self, pcm_bytes: bytes):
         """Add raw 16-bit PCM bytes to the buffer and run inference."""
@@ -83,10 +86,10 @@ class MediaService:
     async def get_video_generator(self):
         """Generator for FastAPI StreamingResponse (MJPEG)."""
         while True:
+            await self.frame_event.wait()
             if self.latest_frame:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n\r\n' + self.latest_frame + b'\r\n')
-            await asyncio.sleep(0.04) # ~25 FPS max polling
 
 # Singleton instance
 media_service = MediaService()
